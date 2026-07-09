@@ -27,6 +27,13 @@
   const DASH_DURATION = 0.22;
   const DASH_COOLDOWN = 2.2;
 
+  // Sharks lock on when the player swims within AGGRO_RADIUS, and give up
+  // once the player gets beyond AGGRO_LOSE or back onto a shore. Chase speed
+  // is capped just under swim speed so a lock-on is dangerous but escapable.
+  const AGGRO_RADIUS = 170;
+  const AGGRO_LOSE = 250;
+  const CHASE_SPEED_CAP = PLAYER_SPEED * 0.95;
+
   const TEAMMATE_COUNT = 4;
 
   const MAX_DIFFICULTY_ROUND = 10; // scaling caps here; later rounds stay this hard
@@ -243,6 +250,7 @@
       r: 20,
       tailPhase: rand(0, TAU),
       retargetIn: 0,
+      aggro: false,
       speedMult,
       homeX: 0, homeY: 0,
       baseSpeed: 0,
@@ -417,8 +425,32 @@
   }
 
   function updateShark(s, dt) {
-    s.retargetIn -= dt;
-    if (s.retargetIn <= 0) retargetShark(s);
+    // Aggro: notice the player when they swim close, lose interest when they
+    // slip away or reach a shore. Only active mid-round.
+    const p = game.player;
+    const playerInWater = game.state === "playing" &&
+      p.x > WATER_LEFT + 4 && p.x < WATER_RIGHT - 4;
+    const d2p = dist2(s.x, s.y, p.x, p.y);
+
+    if (s.aggro) {
+      if (!playerInWater || d2p > AGGRO_LOSE * AGGRO_LOSE) {
+        s.aggro = false;
+        retargetShark(s);
+      }
+    } else if (playerInWater && d2p < AGGRO_RADIUS * AGGRO_RADIUS) {
+      s.aggro = true;
+      spawnRing(s.x, s.y, "rgba(255, 130, 110, 0.85)");
+    }
+
+    if (s.aggro) {
+      const a = Math.atan2(p.y - s.y, p.x - s.x);
+      const chaseSpeed = Math.min(s.baseSpeed * s.speedMult * 1.15, CHASE_SPEED_CAP);
+      s.vx = Math.cos(a) * chaseSpeed;
+      s.vy = Math.sin(a) * chaseSpeed;
+    } else {
+      s.retargetIn -= dt;
+      if (s.retargetIn <= 0) retargetShark(s);
+    }
 
     s.x += s.vx * dt;
     s.y += s.vy * dt;
@@ -435,9 +467,9 @@
     let delta = target - s.facing;
     while (delta > Math.PI) delta -= TAU;
     while (delta < -Math.PI) delta += TAU;
-    s.facing += delta * Math.min(1, dt * 4);
+    s.facing += delta * Math.min(1, dt * (s.aggro ? 7 : 4));
 
-    s.tailPhase += dt * 7;
+    s.tailPhase += dt * (s.aggro ? 12 : 7);
   }
 
   function checkCollisions() {
@@ -705,10 +737,16 @@
     ctx.closePath();
     ctx.fill();
 
-    // Eye.
-    ctx.fillStyle = "#1d262e";
+    // Eye — flares red while the shark is locked onto the player.
+    if (s.aggro) {
+      ctx.fillStyle = "rgba(255, 90, 70, 0.35)";
+      ctx.beginPath();
+      ctx.arc(L * 0.62, -s.r * 0.25, 6, 0, TAU);
+      ctx.fill();
+    }
+    ctx.fillStyle = s.aggro ? "#e8402a" : "#1d262e";
     ctx.beginPath();
-    ctx.arc(L * 0.62, -s.r * 0.25, 2.6, 0, TAU);
+    ctx.arc(L * 0.62, -s.r * 0.25, s.aggro ? 3.1 : 2.6, 0, TAU);
     ctx.fill();
 
     // Gill lines.
