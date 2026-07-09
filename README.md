@@ -8,7 +8,7 @@ A single-player browser arcade game inspired by the classic playground game. You
 
 - Cross from the left shore to the right shore to complete a round.
 - Each round gets harder: more sharks, faster sharks.
-- Sharks patrol unpredictably — but swim too close and they'll notice you and give chase (watch for the red eye). Put some distance between you or reach a shore to shake them off.
+- Sharks patrol unpredictably — but swim too close and they'll notice you and give chase (watch for the red eye). A chasing shark is slightly faster than you: dash away or reach a shore to shake it off.
 - **If a shark touches you, you go all the way back to Round 1.** That's the rule of the pool.
 - Teammates can be caught too; they're out for the round, but your run continues.
 

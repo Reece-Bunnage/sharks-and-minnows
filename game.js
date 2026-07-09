@@ -28,11 +28,12 @@
   const DASH_COOLDOWN = 2.2;
 
   // Sharks lock on when the player swims within AGGRO_RADIUS, and give up
-  // once the player gets beyond AGGRO_LOSE or back onto a shore. Chase speed
-  // is capped just under swim speed so a lock-on is dangerous but escapable.
+  // once the player gets beyond AGGRO_LOSE or back onto a shore. Chasing
+  // sharks swim slightly faster than the player, so a lock-on can't be
+  // outswum in a straight line — dash or reach a shore to escape.
   const AGGRO_RADIUS = 170;
   const AGGRO_LOSE = 250;
-  const CHASE_SPEED_CAP = PLAYER_SPEED * 0.95;
+  const CHASE_SPEED = PLAYER_SPEED * 1.08;
 
   const TEAMMATE_COUNT = 4;
 
@@ -444,9 +445,8 @@
 
     if (s.aggro) {
       const a = Math.atan2(p.y - s.y, p.x - s.x);
-      const chaseSpeed = Math.min(s.baseSpeed * s.speedMult * 1.15, CHASE_SPEED_CAP);
-      s.vx = Math.cos(a) * chaseSpeed;
-      s.vy = Math.sin(a) * chaseSpeed;
+      s.vx = Math.cos(a) * CHASE_SPEED;
+      s.vy = Math.sin(a) * CHASE_SPEED;
     } else {
       s.retargetIn -= dt;
       if (s.retargetIn <= 0) retargetShark(s);
